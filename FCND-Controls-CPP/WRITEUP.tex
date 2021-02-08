@@ -1,0 +1,94 @@
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm}
+\usepackage{amsfonts}
+
+
+\begin{document}
+
+\title{Project 3: Drone Controller in C++}%
+\author{Matthias Schmitt}%
+
+\maketitle
+\section{Implement body rate control}
+
+The controller is a proportional controller on body rates to commanded moments. The controller takes into account the moments of inertia of the drone when calculating the commanded moments. The function \verb+QuadControl::BodyRateControl+ implements the formulas
+
+$$M_x = k_{pqr} \times I_x \times (p_c - p)$$
+$$M_y = k_{pqr} \times I_y \times (q_c - q)$$
+$$M_z = k_{pqr} \times I_z \times (r_c - r)$$
+
+where $p$, $q$ and $r$ denote the current body rates, $p_c$, $q_c$ and $r_c$ are commanded rates and $k_{pqr}$ is the gain parameter that can be controlled with \verb+QuadControlParams.txt+ - as can all the other parameters mentioned in the following.
+
+\section{Implement roll pitch control}
+
+The controller uses the acceleration and thrust commands $t_c$ (in Newton) in addition to the vehicle attitude (computed as the rotation matrix $R$) to output a body rate command $(p_c,q_c,r_c)$. The controller accounts for the non-linear transformation from local accelerations to body rates. The drone's mass $m$ is accounted for when calculating the target angles.
+
+The function \verb+QuadControl::RollPitchControl+ returns the $(p_c,q_c,r_c)$ vector used in \verb+QuadControl::BodyRateControl+ and implements the formulas
+
+$c_d = -t_c/m$
+
+using the acceleration $c_d$ to turn the 'control knobs' in the rotation matrix $R$:
+
+$R_{13} = b_x^a = a_x / c_d  \quad R_{23}= b_y^a = a_y / c_d$
+
+where $a_x$ denotes the desired acceleration in global $xy$-coordinates and $t_c$ the total collective commanded thrust.
+
+$$\left(\begin{array}{c} p_c \\ q_c\end{array} \right) = \frac{1}{R_{33}} \cdot \left(
+                                 \begin{array}{cc}
+                                   R_{21} & -R_{11} \\
+                                   R_{22} & -R_{12} \\
+                                 \end{array}
+                               \right) \times
+                                \left(\begin{array}{c}
+                                  k_p(b_x^c - R_{13}) \\
+                                  k_p(b_y^c - R_{23})
+                                \end{array}
+                                \right)$$
+
+The $z$ component of the body rates is set to zero since we only care for pitch and roll in this function.
+
+
+\section{Implement altitude controller}
+
+The controller uses both the down position and the down velocity to command thrust. The thrust includes the non-linear effects from non-zero roll/pitch angles through the rotation matrix $R$. The altitude controller contains an integrator to handle the weight non-idealities presented in scenario 4.
+
+The function \verb+QuadControl::AltitudeControl+ implements a PID controller as follows
+
+$$a_z = a_z^c + k_{p-z} (z_t-z_a) + k_{d-z}(\dot z_t - \dot z_a) + k_{i-z}\int (z_t - z_a) dt$$
+
+with $a_z^c$ the feed-forward acceleration commanded in the $z$-direction; $z_t$ and $z_a$ denote the target and actual $z$-coordinate.
+The commanded acceleration is turned into a thrust (force) via
+
+$$t_z = - m(a_z - g)/R_{22}$$
+
+In the code, the term $(a_z - g)/R_{22}$ is constrained using the max ascent and descent rate.
+
+\section{Implement lateral position control}
+
+The controller uses the local NE position and velocity to generate a commanded local acceleration in the $xy$-directions $a_x$ and $a_y$. Lateral position control is implemented in \verb+QuadControl::LateralPositionControl+.
+
+For the $x$-coordinate the implemented PD-controler reads
+
+$$a_x = a_{ff} + k_{p-xy} (x_t - x_a) + k_{d-xy} (\dot x_t - \dot x_a)$$
+
+For the $y$-coordinate the same formula is applied. In the code the target velocity $\vec v_t = (\dot x,\dot y,0)$ is capped to \verb+maxSpeedXY+ and the commanded acceleration to \verb+maxAccelXY+.
+
+\section{Implement yaw control}
+
+The controller is a linear/proportional heading controller to yaw rate commands.
+It maps the commanded yaw to the range $[-\pi,\pi]$ and simply sets the yaw rate $r$ to
+
+$\dot r = k_{r} (r_t - r_a)$
+
+\section{Implement calculating the motor commands}
+
+Implemented in \verb+QuadControl::GenerateMotorCommands+
+
+The thrust and moments are converted to the appropriate 4 different desired thrust forces for the moments.
+
+The dimensions of the drone are  accounted for by using arm length $L$ divided by $\sqrt{2}$, which projects the arm length onto the $x$ and $y$ axes respectively. The $\kappa$ provided corresponds to $k_f/k_m$. The formulas to implement are very similar to those we figured out in Exercise 1 in the course.
+
+
+
+\end{document}

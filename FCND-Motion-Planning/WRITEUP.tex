@@ -1,0 +1,106 @@
+
+\documentclass[12pt]{article}
+\usepackage[english]{babel}
+\usepackage{amsmath,amsthm}
+\usepackage{amsfonts}
+
+
+\begin{document}
+
+\title{Project 2: Motion planning}%
+\author{Matthias Schmitt}%
+
+
+\maketitle
+
+\section{Explain the Starter Code}
+
+\verb+motion_planning.py+ contains \verb+main()+ and all the event-architecture also seen in the backyard flyer project (e.g. all the \verb+..._transition+ and the \verb+..._callback+ methods). The callbacks check if a state has been reached and if so, initiate some action via the transition methods to get to the next behavior of the drone. The transitions set a new flight state (e.g. landing) and initiate some action.
+ 
+The new method in this project is \verb+plan_path+. What this does is basically all given in the comments. The reason we get a zig-zag path in 
+the beginning is the setting of the initial goal point which located at a position diagonal from the start point (relative to the grid used).
+Once we add diagonal search to the A* algorithm, the zig-zag course becomes a straight line of many waypoints.
+
+The A* algorithm is implemented in \verb+planning_utils.py+ together with the \verb+create_grid+ function. It populates an empty grid with obstacles initially read from the csv file.
+
+\section{Implementing Your Path Planning Algorithm}
+
+All modifications in the following are to the function \verb+plan_path+.
+
+\subsection{Reading the home location from file}
+In the starter code, we assume that the home position is where the drone first initializes, but in reality you need to be able to start planning from anywhere. Modify your code to read the global home location from the first line of the colliders.csv file and set that position as global home:
+
+\begin{verbatim}
+    f = open('colliders.csv', 'r+')
+    l = f.readline()
+    f.close()
+
+    start_pos = dict((x.strip(), float(y.strip()))
+                     for x, y in (element.split(' ')
+                                  for element in l.split(', ')))
+
+    self.set_home_position(start_pos['lon0'], start_pos['lat0'], 0)
+\end{verbatim}
+
+\subsection{Take off from anywhere}
+In the starter code, we assume the drone takes off from map center, but you'll need to be able to takeoff from anywhere. Retrieve your current position in geodetic coordinates. Then to convert to local position.
+
+\begin{verbatim}
+    # TODO: convert to current local position using global_to_local()
+    local_position = global_to_local([self._longitude, self._latitude,
+                                      self._altitude], self.global_home)
+\end{verbatim}
+
+
+\subsection{Local position as start-off position on grid}
+In the starter code, the start point for planning is hardcoded as map center. Change this to be your current local position.
+
+\begin{verbatim}
+    # Define starting point on the grid (this is just grid center)
+    grid_start = (-north_offset, -east_offset)
+    # TODO: convert start position to current position rather than map center
+    grid_start = (-north_offset + math.floor(self.local_position[0]),
+                  -east_offset + math.floor(self.local_position[1]))
+\end{verbatim}
+
+This is another step in adding flexibility to the start location.
+
+\subsection{Flexible goal location}
+
+In the starter code, the goal position is hardcoded as some location 10 m north and 10 m east of map center. Modify this to be set as some arbitrary position on the grid given any geodetic coordinates (latitude, longitude)
+
+\begin{verbatim}
+    goal_lat = 37.797366      # set the goal in geodetic coordinates
+    goal_lon = -122.394869
+
+    goal_local = global_to_local([goal_lon, goal_lat, 0], self.global_home)
+    grid_goal = (-north_offset + math.floor(goal_local[0]),
+                 -east_offset + math.floor(goal_local[1]))
+\end{verbatim}
+
+\subsection{Extending A* to include diagonal motion}
+
+The code to add diagonal motion is contained in \verb+planning_utils.py+, where the class \verb+Action+ is modified with four additional
+additional directions:
+
+\begin{verbatim}
+class Action(Enum)
+    ...
+    NORTHEAST = (-1,1,sqrt(2))
+    ...   # similar for the other four directions, see code
+\end{verbatim}
+
+and  a modification to the selection of \verb+valid_actions(grid, current_node)+, where we have to add ´statements to
+check the state of the grid in each of the new directions, e.g.:
+
+\begin{verbatim}
+    if x + 1 > n or y - 1 < 0 or grid[x + 1, y - 1] == 1:
+        valid_actions.remove(Action.SOUTHWEST)
+\end{verbatim}
+
+\subsection{Culling waypoints using Bresenhams algorithm}
+
+I used code developed in one of the exercises \verb+raytrace(self, p1, p2)+ to run Bresenhams algorithm on the path $(p_1,p_2,\dots,p_n)$ provided by the planner. The algorithm starts with a straight line from $p_1$ to $p_n$ and checks if there's an obstacle in the way. Then it halves the path and checks again for the segments $(p_1, p_m)$ and $(p_m,p_n)$ where $p_m$ is the waypoint in the middle of the list of waypoints. This is repeated as long as there are segments with non-neighboring waypoints.
+
+\end{document}
+

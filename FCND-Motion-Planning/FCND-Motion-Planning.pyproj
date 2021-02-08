@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{7dee3a8c-5586-44a9-93e4-cf18706da262}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>backyard_flyer_solution.py</StartupFile>
+    <SearchPath>..\FCND-Term1-Starter-Kit</SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>CondaEnv|CondaEnv|fcnd</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
+    <SuppressConfigureTestFrameworkPrompt>true</SuppressConfigureTestFrameworkPrompt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="backyard_flyer_solution.py" />
+    <Compile Include="motion_planning.py" />
+    <Compile Include="planning_utils.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Logs\NavLog.txt" />
+    <Content Include="Logs\TLog.txt" />
+    <Content Include="misc\double_helix.gif" />
+    <Content Include="misc\enroute.png" />
+    <Content Include="misc\high_up.png" />
+    <Content Include="misc\in_the_trees.png" />
+    <Content Include="misc\map.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Logs" />
+    <Folder Include="misc" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="CondaEnv|CondaEnv|fcnd" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
